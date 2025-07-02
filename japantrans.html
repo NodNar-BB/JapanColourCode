@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Japanese Character Highlighter</title>
+  <style>
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column; /* stack vertically */
+      justify-content: center; /* center vertically */
+      align-items: center;     /* center horizontally */
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    .char-box {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 2px;
+      border-radius: 4px;
+      font-size: 1.5rem;
+      font-family: "Noto Sans JP", sans-serif;
+      position: relative;
+    }
+
+    /* Responsive Tooltip (touch-friendly) */
+    .char-box[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 4px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-size: 0.9rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+
+    .char-box:hover::after,
+    .char-box:focus::after,
+    .char-box:active::after {
+      opacity: 1;
+    }
+
+/* Default style */
+.default { background-color: transparent; color: black; }
+
+/* A-row */
+/* A-row .a { background-color: aliceblue; color: black; }
+.i { background-color: ivory; color: black; }
+.u { background-color: umber; color: white; }
+.e { background-color: emerald; color: white; }
+.o { background-color: olive; color: white; } */
+
+/* K-row */
+.ka, .ki, .ku, .ke, .ko { background-color: rgb(150, 145, 99); color: white; }
+
+/* S-row */
+.sa, .shi, .su, .se, .so { background-color: silver; color: black; }
+
+/* T-row */
+.ta, .chi, .tsu, .te, .to { background-color: teal; color: white; }
+
+/* N-row */
+.na, .ni, .nu, .ne, .no { background-color: navy; color: white; }
+
+/* H-row */
+.ha, .hi, .fu, .he, .ho { background-color: rgb(200, 255, 154); color: black; }
+
+/* M-row */
+.ma, .mi, .mu, .me, .mo { background-color: magenta; color: white; }
+
+/* Y-row */
+.ya, .yu, .yo { background-color: yellow; color: black; }
+
+/* R-row */
+.ra, .ri, .ru, .re, .ro { background-color: red; color: white; }
+
+/* W-row */
+.wa, .wo { background-color: wheat; color: black; }
+
+/* N-only */
+.n { background-color: navajowhite; color: black; }
+
+/* Dakuten (G, Z, D, B) */
+.ga, .gi, .gu, .ge, .go { background-color: green; color: white; }
+.za, .ji, .zu, .ze, .zo { background-color: gold; color: black; }
+.da, .de, .do { background-color: darkorange; color: black; }
+.dzu, .dji { background-color: darksalmon; color: black; } /* optional: rare kana */
+
+.ba, .bi, .bu, .be, .bo { background-color: blue; color: white; }
+
+/* Handakuten (P) */
+.pa, .pi, .pu, .pe, .po { background-color: plum; color: white; }
+
+/* Small kana */
+.small-tsu, .small-ya, .small-yu, .small-yo,
+.small-a, .small-i, .small-u, .small-e, .small-o {
+  background-color: gray;
+  color: white;
+}
+  </style>
+</head>
+<body>
+
+  <h2>Japanese Text Highlighter</h2>
+  <p>Enter hiragana or katakana text:</p>
+  <input type="text" id="japaneseInput" style="font-size: 20px;" />
+  <button onclick="highlightText()">Analyze</button>
+
+  <h3>Output:</h3>
+  <div id="output"></div>
+
+  <script>
+    function highlightText() {
+      const input = document.getElementById('japaneseInput').value;
+      const outputDiv = document.getElementById('output');
+      outputDiv.innerHTML = ''; // clear previous output
+
+          // Romaji map for tooltips
+    const romajiMap = {
+      'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+      'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+      'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+      'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+      'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+      'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+      'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+      'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+      'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+      'わ': 'wa', 'を': 'wo', 'ん': 'n',
+      'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+      'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+      'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do',
+      'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+      'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
+      'ア': 'a', 'イ': 'i', 'ウ': 'u', 'エ': 'e', 'オ': 'o',
+      'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
+      'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
+      'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
+      'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
+      'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
+      'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
+      'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
+      'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
+      'ワ': 'wa', 'ヲ': 'wo', 'ン': 'n',
+      'ガ': 'ga', 'ギ': 'gi', 'グ': 'gu', 'ゲ': 'ge', 'ゴ': 'go',
+      'ザ': 'za', 'ジ': 'ji', 'ズ': 'zu', 'ゼ': 'ze', 'ゾ': 'zo',
+      'ダ': 'da', 'ヂ': 'ji', 'ヅ': 'zu', 'デ': 'de', 'ド': 'do',
+      'バ': 'ba', 'ビ': 'bi', 'ブ': 'bu', 'ベ': 'be', 'ボ': 'bo',
+      'パ': 'pa', 'ピ': 'pi', 'プ': 'pu', 'ペ': 'pe', 'ポ': 'po',
+      'ゃ': 'ya', 'ゅ': 'yu', 'ょ': 'yo', 'っ': 'tsu',
+      'ぁ': 'a', 'ぃ': 'i', 'ぅ': 'u', 'ぇ': 'e', 'ぉ': 'o',
+      'ャ': 'ya', 'ュ': 'yu', 'ョ': 'yo', 'ッ': 'tsu',
+      'ァ': 'a', 'ィ': 'i', 'ゥ': 'u', 'ェ': 'e', 'ォ': 'o'
+    };
+
+      for (let char of input) {
+        const span = document.createElement('span');
+        span.classList.add('char-box');
+
+        // Apply specific styles based on character
+switch (char) {
+  // Hiragana (あ〜ん)
+  case 'あ': span.classList.add('a'); break;
+  case 'い': span.classList.add('i'); break;
+  case 'う': span.classList.add('u'); break;
+  case 'え': span.classList.add('e'); break;
+  case 'お': span.classList.add('o'); break;
+
+  case 'か': span.classList.add('ka'); break;
+  case 'き': span.classList.add('ki'); break;
+  case 'く': span.classList.add('ku'); break;
+  case 'け': span.classList.add('ke'); break;
+  case 'こ': span.classList.add('ko'); break;
+
+  case 'さ': span.classList.add('sa'); break;
+  case 'し': span.classList.add('shi'); break;
+  case 'す': span.classList.add('su'); break;
+  case 'せ': span.classList.add('se'); break;
+  case 'そ': span.classList.add('so'); break;
+
+  case 'た': span.classList.add('ta'); break;
+  case 'ち': span.classList.add('chi'); break;
+  case 'つ': span.classList.add('tsu'); break;
+  case 'て': span.classList.add('te'); break;
+  case 'と': span.classList.add('to'); break;
+
+  case 'な': span.classList.add('na'); break;
+  case 'に': span.classList.add('ni'); break;
+  case 'ぬ': span.classList.add('nu'); break;
+  case 'ね': span.classList.add('ne'); break;
+  case 'の': span.classList.add('no'); break;
+
+  case 'は': span.classList.add('ha'); break;
+  case 'ひ': span.classList.add('hi'); break;
+  case 'ふ': span.classList.add('fu'); break;
+  case 'へ': span.classList.add('he'); break;
+  case 'ほ': span.classList.add('ho'); break;
+
+  case 'ま': span.classList.add('ma'); break;
+  case 'み': span.classList.add('mi'); break;
+  case 'む': span.classList.add('mu'); break;
+  case 'め': span.classList.add('me'); break;
+  case 'も': span.classList.add('mo'); break;
+
+  case 'や': span.classList.add('ya'); break;
+  case 'ゆ': span.classList.add('yu'); break;
+  case 'よ': span.classList.add('yo'); break;
+
+  case 'ら': span.classList.add('ra'); break;
+  case 'り': span.classList.add('ri'); break;
+  case 'る': span.classList.add('ru'); break;
+  case 'れ': span.classList.add('re'); break;
+  case 'ろ': span.classList.add('ro'); break;
+
+  case 'わ': span.classList.add('wa'); break;
+  case 'を': span.classList.add('wo'); break;
+  case 'ん': span.classList.add('n'); break;
+
+  // Dakuten / Handakuten (voiced)
+  case 'が': span.classList.add('ga'); break;
+  case 'ぎ': span.classList.add('gi'); break;
+  case 'ぐ': span.classList.add('gu'); break;
+  case 'げ': span.classList.add('ge'); break;
+  case 'ご': span.classList.add('go'); break;
+
+  case 'ざ': span.classList.add('za'); break;
+  case 'じ': span.classList.add('ji'); break;
+  case 'ず': span.classList.add('zu'); break;
+  case 'ぜ': span.classList.add('ze'); break;
+  case 'ぞ': span.classList.add('zo'); break;
+
+  case 'だ': span.classList.add('da'); break;
+  case 'ぢ': span.classList.add('ji'); break;
+  case 'づ': span.classList.add('zu'); break;
+  case 'で': span.classList.add('de'); break;
+  case 'ど': span.classList.add('do'); break;
+
+  case 'ば': span.classList.add('ba'); break;
+  case 'び': span.classList.add('bi'); break;
+  case 'ぶ': span.classList.add('bu'); break;
+  case 'べ': span.classList.add('be'); break;
+  case 'ぼ': span.classList.add('bo'); break;
+
+  case 'ぱ': span.classList.add('pa'); break;
+  case 'ぴ': span.classList.add('pi'); break;
+  case 'ぷ': span.classList.add('pu'); break;
+  case 'ぺ': span.classList.add('pe'); break;
+  case 'ぽ': span.classList.add('po'); break;
+
+  // Small kana (ぁぃぅょ etc.)
+  case 'ゃ': span.classList.add('small-ya'); break;
+  case 'ゅ': span.classList.add('small-yu'); break;
+  case 'ょ': span.classList.add('small-yo'); break;
+  case 'っ': span.classList.add('small-tsu'); break;
+  case 'ぁ': span.classList.add('small-a'); break;
+  case 'ぃ': span.classList.add('small-i'); break;
+  case 'ぅ': span.classList.add('small-u'); break;
+  case 'ぇ': span.classList.add('small-e'); break;
+  case 'ぉ': span.classList.add('small-o'); break;
+
+  // Katakana (ア〜ン)
+  case 'ア': span.classList.add('a'); break;
+  case 'イ': span.classList.add('i'); break;
+  case 'ウ': span.classList.add('u'); break;
+  case 'エ': span.classList.add('e'); break;
+  case 'オ': span.classList.add('o'); break;
+
+  case 'カ': span.classList.add('ka'); break;
+  case 'キ': span.classList.add('ki'); break;
+  case 'ク': span.classList.add('ku'); break;
+  case 'ケ': span.classList.add('ke'); break;
+  case 'コ': span.classList.add('ko'); break;
+
+  case 'サ': span.classList.add('sa'); break;
+  case 'シ': span.classList.add('shi'); break;
+  case 'ス': span.classList.add('su'); break;
+  case 'セ': span.classList.add('se'); break;
+  case 'ソ': span.classList.add('so'); break;
+
+  case 'タ': span.classList.add('ta'); break;
+  case 'チ': span.classList.add('chi'); break;
+  case 'ツ': span.classList.add('tsu'); break;
+  case 'テ': span.classList.add('te'); break;
+  case 'ト': span.classList.add('to'); break;
+
+  case 'ナ': span.classList.add('na'); break;
+  case 'ニ': span.classList.add('ni'); break;
+  case 'ヌ': span.classList.add('nu'); break;
+  case 'ネ': span.classList.add('ne'); break;
+  case 'ノ': span.classList.add('no'); break;
+
+  case 'ハ': span.classList.add('ha'); break;
+  case 'ヒ': span.classList.add('hi'); break;
+  case 'フ': span.classList.add('fu'); break;
+  case 'ヘ': span.classList.add('he'); break;
+  case 'ホ': span.classList.add('ho'); break;
+
+  case 'マ': span.classList.add('ma'); break;
+  case 'ミ': span.classList.add('mi'); break;
+  case 'ム': span.classList.add('mu'); break;
+  case 'メ': span.classList.add('me'); break;
+  case 'モ': span.classList.add('mo'); break;
+
+  case 'ヤ': span.classList.add('ya'); break;
+  case 'ユ': span.classList.add('yu'); break;
+  case 'ヨ': span.classList.add('yo'); break;
+
+  case 'ラ': span.classList.add('ra'); break;
+  case 'リ': span.classList.add('ri'); break;
+  case 'ル': span.classList.add('ru'); break;
+  case 'レ': span.classList.add('re'); break;
+  case 'ロ': span.classList.add('ro'); break;
+
+  case 'ワ': span.classList.add('wa'); break;
+  case 'ヲ': span.classList.add('wo'); break;
+  case 'ン': span.classList.add('n'); break;
+
+  // Katakana with dakuten/handakuten
+  case 'ガ': span.classList.add('ga'); break;
+  case 'ギ': span.classList.add('gi'); break;
+  case 'グ': span.classList.add('gu'); break;
+  case 'ゲ': span.classList.add('ge'); break;
+  case 'ゴ': span.classList.add('go'); break;
+
+  case 'ザ': span.classList.add('za'); break;
+  case 'ジ': span.classList.add('ji'); break;
+  case 'ズ': span.classList.add('zu'); break;
+  case 'ゼ': span.classList.add('ze'); break;
+  case 'ゾ': span.classList.add('zo'); break;
+
+  case 'ダ': span.classList.add('da'); break;
+  case 'ヂ': span.classList.add('ji'); break;
+  case 'ヅ': span.classList.add('zu'); break;
+  case 'デ': span.classList.add('de'); break;
+  case 'ド': span.classList.add('do'); break;
+
+  case 'バ': span.classList.add('ba'); break;
+  case 'ビ': span.classList.add('bi'); break;
+  case 'ブ': span.classList.add('bu'); break;
+  case 'ベ': span.classList.add('be'); break;
+  case 'ボ': span.classList.add('bo'); break;
+
+  case 'パ': span.classList.add('pa'); break;
+  case 'ピ': span.classList.add('pi'); break;
+  case 'プ': span.classList.add('pu'); break;
+  case 'ペ': span.classList.add('pe'); break;
+  case 'ポ': span.classList.add('po'); break;
+
+  // Small katakana
+  case 'ャ': span.classList.add('small-ya'); break;
+  case 'ュ': span.classList.add('small-yu'); break;
+  case 'ョ': span.classList.add('small-yo'); break;
+  case 'ッ': span.classList.add('small-tsu'); break;
+  case 'ァ': span.classList.add('small-a'); break;
+  case 'ィ': span.classList.add('small-i'); break;
+  case 'ゥ': span.classList.add('small-u'); break;
+  case 'ェ': span.classList.add('small-e'); break;
+  case 'ォ': span.classList.add('small-o'); break;
+
+  // Fallback/default
+  default:
+    span.classList.add('default');
+}
+
+        span.textContent = char;
+         const romaji = romajiMap[char];
+        if (romaji) {
+          span.setAttribute('data-tooltip', romaji);
+        }
+
+        outputDiv.appendChild(span);
+      }
+    }
+
+  </script>
+
+</body>
+</html>
